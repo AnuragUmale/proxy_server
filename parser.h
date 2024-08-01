@@ -43,12 +43,13 @@ int unparse_headers(Request* req, char* buffer, size_t buffer_length);
 size_t request_total_length(Request* req);
 size_t request_header_length(Request* req);
 int set_header(Request *req, const char * key, const char * value);
-Request* get_header(Request* *req, const char * key);
 int remove_header(Request* req, const char* key);
 int print_request(Request* req, char* buffer, size_t buffer_length, size_t temp_variable);
 size_t request_length(Request* req);
 void create_header(Request* req);
 void destroy_header(Header* req);
+size_t header_line_length(Header * head);
+int print_headers(Request *req, char * buffer, size_t length);
 void debug(const char * format, ...);
 
 

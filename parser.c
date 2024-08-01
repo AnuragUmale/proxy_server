@@ -44,7 +44,25 @@ void destroy_request(Request *req){
 int unparse_request(Request* req, char* buffer, size_t buffer_len);
 int unparse_headers(Request* req, char* buffer, size_t buffer_length);
 size_t request_total_length(Request* req);
-size_t request_header_length(Request* req);
+
+size_t header_line_length(Header * head){
+    if(head->key){
+        return strlen(head->key) + strlen(head->value);
+    }
+    return 0;
+}
+
+size_t request_header_length(Request* req){
+    if(req){
+        size_t length = 0;
+        for(int i = 0; req->headers_used > i; i++){
+            length += header_line_length(req->headers + i);
+        }
+        length += 2;
+        return length;
+    }
+    return 0;
+}
 
 int set_header(Request *req, const char * key, const char * value){
     Header* head;
@@ -72,10 +90,58 @@ int set_header(Request *req, const char * key, const char * value){
     return 0;
 }
 
-Request* get_header(Request* *req, const char * key);
-int remove_header(Request* req, const char* key);
+Header* get_header(Request *req, const char * key){
+    size_t counter = 0;
+    Header *temp_header;
+    while(req->headers_used > counter){
+        temp_header = req->headers + counter;
+        if(temp_header->key && key && !strcmp(temp_header->key, key)){
+            return temp_header;
+        }
+        counter++;
+    }
+    return NULL;
+}
+
+int remove_header(Request* req, const char* key){
+    Header *temp_header;
+    temp_header = get_header(req,key);
+    if(temp_header == NULL){
+        return -1;
+    }
+    req->headers_used--;
+    free(temp_header->key);
+    free(temp_header->value);
+    temp_header->key = NULL;
+    temp_header->value = NULL;
+    return 0;
+}
 int print_request(Request* req, char* buffer, size_t buffer_length, size_t temp_variable);
 size_t request_length(Request* req);
+
+int print_headers(Request *req, char * buffer, size_t length){
+    char *current = buffer;
+    Header* head;
+    size_t i = 0;
+    if(length < header_line_length(req->headers)){
+        debug("Headers are too small to print\r\n\r\n");
+    }
+    while(req->headers_used > i){
+        head = req->headers + i;
+        if(req->headers){
+            memcpy(current, head->key, strlen(head->key));
+            memcpy(current+strlen(head->key), ": ", 2);
+	        memcpy(current+strlen(head->key) +2 , head->value, strlen(head->value));
+	        memcpy(current+strlen(head->key) +2+strlen(head->value) , "\r\n", 2);
+	       current += strlen(head->key)+strlen(head->value)+4;
+        }
+        i++;
+    }
+    memcpy(current, "\r\n",2);
+    // current += 2;
+    return 0;
+
+}
 
 void create_header(Request* req){
     req->headers = (Header*)malloc(sizeof(Header) * NUMBER_OF_HEADERS);
